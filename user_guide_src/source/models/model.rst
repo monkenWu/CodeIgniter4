@@ -197,10 +197,18 @@ $beforeInsert
 -------------
 $afterInsert
 ------------
+$beforeInsertBatch
+------------------
+$afterInsertBatch
+-----------------
 $beforeUpdate
 -------------
 $afterUpdate
 ------------
+$beforeUpdateBatch
+------------------
+$afterUpdateBatch
+-----------------
 $afterFind
 ----------
 $afterDelete
@@ -301,6 +309,17 @@ the array's values are the values to save for that key:
 .. literalinclude:: model/015.php
 
 You can retrieve the last inserted row's primary key using the ``getInsertID()`` method.
+
+.. _model-allow-empty-inserts:
+
+allowEmptyInserts()
+-------------------
+
+Since v4.3.0, you can use ``allowEmptyInserts()`` method to insert empty data. The Model throws an exception when you try to insert empty data by default. But if you call this method, the check will no longer be performed.
+
+.. literalinclude:: model/056.php
+
+You can enable the check again by calling ``allowEmptyInserts(false)``.
 
 update()
 --------
@@ -574,13 +593,16 @@ This is best used during cronjobs, data exports, or other large tasks.
 
 .. literalinclude:: model/049.php
 
+.. _model-events-callbacks:
+
 Model Events
 ************
 
 There are several points within the model's execution that you can specify multiple callback methods to run.
 These methods can be used to normalize data, hash passwords, save related entities, and much more. The following
 points in the model's execution can be affected, each through a class property: ``$beforeInsert``, ``$afterInsert``,
-``$beforeUpdate``, ``$afterUpdate``, ``$afterFind``, and ``$afterDelete``.
+``$beforeInsertBatch``, ``$afterInsertBatch``, ``$beforeUpdate``, ``$afterUpdate``, ``$beforeUpdateBatch``,
+``$afterUpdateBatch``, ``$afterFind``, and ``$afterDelete``.
 
 Defining Callbacks
 ==================
@@ -617,20 +639,28 @@ Event Parameters
 Since the exact data passed to each callback varies a bit, here are the details on what is in the ``$data`` parameter
 passed to each event:
 
-================ =========================================================================================================
-Event            $data contents
-================ =========================================================================================================
+================= =========================================================================================================
+Event             $data contents
+================= =========================================================================================================
 beforeInsert      **data** = the key/value pairs that are being inserted. If an object or Entity class is passed to the
                   insert method, it is first converted to an array.
 afterInsert       **id** = the primary key of the new row, or 0 on failure.
                   **data** = the key/value pairs being inserted.
                   **result** = the results of the insert() method used through the Query Builder.
+beforeInsertBatch **data** = associative array of values that are being inserted. If an object or Entity class is passed to the
+                  insertBatch method, it is first converted to an array.
+afterInsertBatch  **data** = the associative array of values being inserted.
+                  **result** = the results of the insertbatch() method used through the Query Builder.
 beforeUpdate      **id** = the array of primary keys of the rows being updated.
-                  **data** = the key/value pairs that are being inserted. If an object or Entity class is passed to the
-                  insert method, it is first converted to an array.
+                  **data** = the key/value pairs that are being updated. If an object or Entity class is passed to the
+                  update method, it is first converted to an array.
 afterUpdate       **id** = the array of primary keys of the rows being updated.
                   **data** = the key/value pairs being updated.
                   **result** = the results of the update() method used through the Query Builder.
+beforeUpdateBatch **data** = associative array of values that are being updated. If an object or Entity class is passed to the
+                  updateBatch method, it is first converted to an array.
+afterUpdateBatch  **data** = the key/value pairs being updated.
+                  **result** = the results of the updateBatch() method used through the Query Builder.
 beforeFind        The name of the calling **method**, whether a **singleton** was requested, and these additional fields:
 - first()         No additional fields
 - find()          **id** = the primary key of the row being searched for.
@@ -644,7 +674,7 @@ afterDelete       **id** = primary key of row being deleted.
                   **purge** = boolean whether soft-delete rows should be hard deleted.
                   **result** = the result of the delete() call on the Query Builder.
                   **data** = unused.
-================ =========================================================================================================
+================= =========================================================================================================
 
 Modifying Find* Data
 ====================

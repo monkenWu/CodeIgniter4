@@ -14,7 +14,7 @@ namespace CodeIgniter\Test;
 use CodeIgniter\CLI\CLI;
 use CodeIgniter\Events\Events;
 use CodeIgniter\HTTP\Response;
-use CodeIgniter\Test\Filters\CITestStreamFilter;
+
 use Config\App;
 
 /**
@@ -22,10 +22,7 @@ use Config\App;
  */
 final class TestCaseTest extends CIUnitTestCase
 {
-    /**
-     * @var bool|resource
-     */
-    private $stream_filter;
+    use StreamFilterTrait;
 
     public function testGetPrivatePropertyWithObject()
     {
@@ -53,12 +50,9 @@ final class TestCaseTest extends CIUnitTestCase
 
     public function testStreamFilter()
     {
-        CITestStreamFilter::$buffer = '';
-        $this->stream_filter        = stream_filter_append(STDOUT, 'CITestStreamFilter');
         CLI::write('first.');
         $expected = "first.\n";
-        $this->assertSame($expected, CITestStreamFilter::$buffer);
-        stream_filter_remove($this->stream_filter);
+        $this->assertSame($expected, $this->getStreamFilterBuffer());
     }
 
     /**

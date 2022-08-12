@@ -224,6 +224,11 @@ class RouteCollection implements RouteCollectionInterface
     private ?string $httpHost = null;
 
     /**
+     * Flag to limit or not the routes with {locale} placeholder to App::$supportedLocales
+     */
+    protected bool $useSupportedLocalesOnly = false;
+
+    /**
      * Constructor
      */
     public function __construct(FileLocator $locator, Modules $moduleConfig)
@@ -232,6 +237,62 @@ class RouteCollection implements RouteCollectionInterface
         $this->moduleConfig = $moduleConfig;
 
         $this->httpHost = Services::request()->getServer('HTTP_HOST');
+    }
+
+    /**
+     * Loads main routes file and discover routes.
+     *
+     * Loads only once unless reset.
+     *
+     * @return $this
+     */
+    public function loadRoutes(string $routesFile = APPPATH . 'Config/Routes.php')
+    {
+        if ($this->didDiscover) {
+            return $this;
+        }
+
+        $routes = $this;
+        require $routesFile;
+
+        $this->discoverRoutes();
+
+        return $this;
+    }
+
+    /**
+     * Will attempt to discover any additional routes, either through
+     * the local PSR4 namespaces, or through selected Composer packages.
+     */
+    protected function discoverRoutes()
+    {
+        if ($this->didDiscover) {
+            return;
+        }
+
+        // We need this var in local scope
+        // so route files can access it.
+        $routes = $this;
+
+        if ($this->moduleConfig->shouldDiscover('routes')) {
+            $files = $this->fileLocator->search('Config/Routes.php');
+
+            $excludes = [
+                APPPATH . 'Config' . DIRECTORY_SEPARATOR . 'Routes.php',
+                SYSTEMPATH . 'Config' . DIRECTORY_SEPARATOR . 'Routes.php',
+            ];
+
+            foreach ($files as $file) {
+                // Don't include our main file again...
+                if (in_array($file, $excludes, true)) {
+                    continue;
+                }
+
+                include $file;
+            }
+        }
+
+        $this->didDiscover = true;
     }
 
     /**
@@ -355,41 +416,6 @@ class RouteCollection implements RouteCollectionInterface
     public function get404Override()
     {
         return $this->override404;
-    }
-
-    /**
-     * Will attempt to discover any additional routes, either through
-     * the local PSR4 namespaces, or through selected Composer packages.
-     */
-    protected function discoverRoutes()
-    {
-        if ($this->didDiscover) {
-            return;
-        }
-
-        // We need this var in local scope
-        // so route files can access it.
-        $routes = $this;
-
-        if ($this->moduleConfig->shouldDiscover('routes')) {
-            $files = $this->fileLocator->search('Config/Routes.php');
-
-            $excludes = [
-                APPPATH . 'Config' . DIRECTORY_SEPARATOR . 'Routes.php',
-                SYSTEMPATH . 'Config' . DIRECTORY_SEPARATOR . 'Routes.php',
-            ];
-
-            foreach ($files as $file) {
-                // Don't include our main file again...
-                if (in_array($file, $excludes, true)) {
-                    continue;
-                }
-
-                include $file;
-            }
-        }
-
-        $this->didDiscover = true;
     }
 
     /**
@@ -1388,6 +1414,7 @@ class RouteCollection implements RouteCollectionInterface
         }
 
         $this->prioritizeDetected = false;
+        $this->didDiscover        = false;
     }
 
     /**
@@ -1466,5 +1493,23 @@ class RouteCollection implements RouteCollectionInterface
         }
 
         return array_unique($controllers);
+    }
+
+    /**
+     * Set The flag that limit or not the routes with {locale} placeholder to App::$supportedLocales
+     */
+    public function useSupportedLocalesOnly(bool $useOnly): self
+    {
+        $this->useSupportedLocalesOnly = $useOnly;
+
+        return $this;
+    }
+
+    /**
+     * Get the flag that limit or not the routes with {locale} placeholder to App::$supportedLocales
+     */
+    public function shouldUseSupportedLocalesOnly(): bool
+    {
+        return $this->useSupportedLocalesOnly;
     }
 }

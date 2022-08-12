@@ -259,6 +259,34 @@ abstract class BaseModel
     protected $afterUpdate = [];
 
     /**
+     * Callbacks for beforeInsertBatch
+     *
+     * @var array
+     */
+    protected $beforeInsertBatch = [];
+
+    /**
+     * Callbacks for afterInsertBatch
+     *
+     * @var array
+     */
+    protected $afterInsertBatch = [];
+
+    /**
+     * Callbacks for beforeUpdateBatch
+     *
+     * @var array
+     */
+    protected $beforeUpdateBatch = [];
+
+    /**
+     * Callbacks for afterUpdateBatch
+     *
+     * @var array
+     */
+    protected $afterUpdateBatch = [];
+
+    /**
      * Callbacks for beforeFind
      *
      * @var array
@@ -285,6 +313,11 @@ abstract class BaseModel
      * @var array
      */
     protected $afterDelete = [];
+
+    /**
+     * Whether to allow inserting empty data.
+     */
+    protected bool $allowEmptyInserts = false;
 
     public function __construct(?ValidationInterface $validation = null)
     {
@@ -714,7 +747,7 @@ abstract class BaseModel
 
         // doProtectFields() can further remove elements from
         // $data so we need to check for empty dataset again
-        if (empty($data)) {
+        if (! $this->allowEmptyInserts && empty($data)) {
             throw DataException::forEmptyDataset('insert');
         }
 
@@ -811,7 +844,27 @@ abstract class BaseModel
             }
         }
 
-        return $this->doInsertBatch($set, $escape, $batchSize, $testing);
+        $eventData = ['data' => $set];
+
+        if ($this->tempAllowCallbacks) {
+            $eventData = $this->trigger('beforeInsertBatch', $eventData);
+        }
+
+        $result = $this->doInsertBatch($eventData['data'], $escape, $batchSize, $testing);
+
+        $eventData = [
+            'data'   => $eventData['data'],
+            'result' => $result,
+        ];
+
+        if ($this->tempAllowCallbacks) {
+            // Trigger afterInsert events with the inserted data and new ID
+            $this->trigger('afterInsertBatch', $eventData);
+        }
+
+        $this->tempAllowCallbacks = $this->allowCallbacks;
+
+        return $result;
     }
 
     /**
@@ -928,7 +981,27 @@ abstract class BaseModel
             }
         }
 
-        return $this->doUpdateBatch($set, $index, $batchSize, $returnSQL);
+        $eventData = ['data' => $set];
+
+        if ($this->tempAllowCallbacks) {
+            $eventData = $this->trigger('beforeUpdateBatch', $eventData);
+        }
+
+        $result = $this->doUpdateBatch($eventData['data'], $index, $batchSize, $returnSQL);
+
+        $eventData = [
+            'data'   => $eventData['data'],
+            'result' => $result,
+        ];
+
+        if ($this->tempAllowCallbacks) {
+            // Trigger afterInsert events with the inserted data and new ID
+            $this->trigger('afterUpdateBatch', $eventData);
+        }
+
+        $this->tempAllowCallbacks = $this->allowCallbacks;
+
+        return $result;
     }
 
     /**
@@ -1573,7 +1646,7 @@ abstract class BaseModel
             throw new InvalidArgumentException(sprintf('Invalid type "%s" used upon transforming data to array.', $type));
         }
 
-        if (empty($data)) {
+        if (! $this->allowEmptyInserts && empty($data)) {
             throw DataException::forEmptyDataset($type);
         }
 
@@ -1592,7 +1665,7 @@ abstract class BaseModel
         }
 
         // If it's still empty here, means $data is no change or is empty object
-        if (empty($data)) {
+        if (! $this->allowEmptyInserts && empty($data)) {
             throw DataException::forEmptyDataset($type);
         }
 
@@ -1697,5 +1770,15 @@ abstract class BaseModel
         }
 
         return $rules;
+    }
+
+    /**
+     * Sets $allowEmptyInserts.
+     */
+    public function allowEmptyInserts(bool $value = true): self
+    {
+        $this->allowEmptyInserts = $value;
+
+        return $this;
     }
 }

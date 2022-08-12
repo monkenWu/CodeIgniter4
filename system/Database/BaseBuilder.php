@@ -895,19 +895,11 @@ class BaseBuilder
     protected function _whereIn(?string $key = null, $values = null, bool $not = false, string $type = 'AND ', ?bool $escape = null, string $clause = 'QBWhere')
     {
         if (empty($key) || ! is_string($key)) {
-            if (CI_DEBUG) {
-                throw new InvalidArgumentException(sprintf('%s() expects $key to be a non-empty string', debug_backtrace(0, 2)[1]['function']));
-            }
-
-            return $this; // @codeCoverageIgnore
+            throw new InvalidArgumentException(sprintf('%s() expects $key to be a non-empty string', debug_backtrace(0, 2)[1]['function']));
         }
 
         if ($values === null || (! is_array($values) && ! $this->isSubquery($values))) {
-            if (CI_DEBUG) {
-                throw new InvalidArgumentException(sprintf('%s() expects $values to be of type array or closure', debug_backtrace(0, 2)[1]['function']));
-            }
-
-            return $this; // @codeCoverageIgnore
+            throw new InvalidArgumentException(sprintf('%s() expects $values to be of type array or closure', debug_backtrace(0, 2)[1]['function']));
         }
 
         if (! is_bool($escape)) {
@@ -1738,14 +1730,14 @@ class BaseBuilder
     {
         if ($set === null) {
             if (empty($this->QBSet)) {
-                if (CI_DEBUG) {
+                if ($this->db->DBDebug) {
                     throw new DatabaseException('You must use the "set" method to update an entry.');
                 }
 
                 return false; // @codeCoverageIgnore
             }
         } elseif (empty($set)) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('insertBatch() called with no data');
             }
 
@@ -1953,7 +1945,7 @@ class BaseBuilder
     protected function validateInsert(): bool
     {
         if (empty($this->QBSet)) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('You must use the "set" method to insert an entry.');
             }
 
@@ -1985,7 +1977,7 @@ class BaseBuilder
         }
 
         if (empty($this->QBSet)) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('You must use the "set" method to update an entry.');
             }
 
@@ -2117,7 +2109,7 @@ class BaseBuilder
     protected function validateUpdate(): bool
     {
         if (empty($this->QBSet)) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('You must use the "set" method to update an entry.');
             }
 
@@ -2137,7 +2129,7 @@ class BaseBuilder
     public function updateBatch(?array $set = null, ?string $index = null, int $batchSize = 100)
     {
         if ($index === null) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('You must specify an index to match on for batch updates.');
             }
 
@@ -2146,14 +2138,14 @@ class BaseBuilder
 
         if ($set === null) {
             if (empty($this->QBSet)) {
-                if (CI_DEBUG) {
+                if ($this->db->DBDebug) {
                     throw new DatabaseException('You must use the "set" method to update an entry.');
                 }
 
                 return false; // @codeCoverageIgnore
             }
         } elseif (empty($set)) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('updateBatch() called with no data');
             }
 
@@ -2362,7 +2354,7 @@ class BaseBuilder
         }
 
         if (empty($this->QBWhere)) {
-            if (CI_DEBUG) {
+            if ($this->db->DBDebug) {
                 throw new DatabaseException('Deletes are not allowed unless they contain a "where" or "like" clause.');
             }
 
